@@ -26,21 +26,24 @@ O Clube do Livro 104 nasceu como um grupo no WhatsApp e cresceu para reunir leit
 ```
 📁 Project_Clube_do_Livro_104/
 │
-├── app.py                  # Ponto de entrada — inicializa o Streamlit e o menu
+├── app.py                  # Ponto de entrada — inicializa o Streamlit e o menu lateral
 ├── drive_backend.py        # Módulo de integração com o Google Drive
 │
 ├── pages/
 │   ├── home.py             # Página inicial com mensagem de boas-vindas
-│   ├── busca.py            # Página de busca por título
-│   ├── acervo.py           # Página de acervo completo (relatório)
+│   ├── busca.py            # Página de busca por título com autocomplete
+│   ├── acervo.py           # Página de acervo completo em ordem alfabética
 │   └── upload.py           # Página de upload (coming soon)
 │
 ├── credentials.json        # Credenciais OAuth2 do Google Cloud (NÃO versionar)
 ├── token.json              # Token de sessão gerado automaticamente (NÃO versionar)
 ├── requirements.txt        # Dependências Python do projeto
 ├── limpa.sh                # Script para recriar o ambiente virtual do zero
+├── .gitignore              # Arquivos ignorados pelo Git
 └── README.md               # Este arquivo
 ```
+
+> ⚠️ `credentials.json` e `token.json` estão no `.gitignore` e **nunca devem ser versionados**.
 
 ---
 
@@ -63,8 +66,6 @@ O Clube do Livro 104 nasceu como um grupo no WhatsApp e cresceu para reunir leit
 5. Baixe o arquivo `credentials.json` e coloque na raiz do projeto
 6. Em **Tela de Consentimento OAuth**, adicione seu e-mail como usuário de teste
 
-> ⚠️ **Nunca suba o `credentials.json` ou `token.json` para repositórios públicos.**
-
 ---
 
 ## 🚀 Instalação e Execução
@@ -72,7 +73,7 @@ O Clube do Livro 104 nasceu como um grupo no WhatsApp e cresceu para reunir leit
 ### Primeira vez
 
 ```bash
-# Clone ou copie os arquivos para a pasta do projeto
+# Entre na pasta do projeto
 cd /Users/diogodcg/Documents/VSCode_Praticas/Project_Clube_do_Livro_104
 
 # Crie o ambiente virtual
@@ -98,7 +99,6 @@ streamlit run app.py
 ### Se o ambiente travar ou corromper
 
 ```bash
-# Use o script de limpeza incluído no projeto
 ./limpa.sh
 ```
 
@@ -138,17 +138,28 @@ O sistema navega recursivamente por todas as subpastas e lista arquivos nos segu
 
 ### Cache e performance
 
-- O acervo é carregado **uma única vez por sessão** e armazenado em memória (`st.session_state`)
-- A busca e a listagem são feitas **100% localmente**, sem novas requisições ao Drive
-- As capas dos livros são buscadas na **Open Library** (base pública e gratuita) e também cacheadas por sessão
+- O acervo é carregado **uma única vez por sessão** via `st.session_state`
+- Busca e listagem são feitas **100% em memória**, sem novas requisições ao Drive
+- Capas buscadas na **Open Library** e cacheadas por sessão
+
+---
+
+## 🎨 Design
+
+- Paleta **azul marinho** (`#0d2d5e`) e **laranja** (`#f47c20`)
+- Fontes: **Lora** (títulos e nomes de livros) + **Inter** (interface)
+- Layout responsivo com `max-width: 820px`
+- Menu lateral fixo com navegação entre módulos
+- Rodapé fixo: *Desenvolvido por Diogo Campos Gomes*
 
 ---
 
 ## 🔍 Módulo de Busca
 
-- Filtragem em tempo real por qualquer parte do título
-- Exibição de capa do livro (quando disponível na Open Library ou nos metadados do Drive)
-- Informações extraídas automaticamente do nome do arquivo: título, autor, edição e ano
+- Campo de texto com filtragem em tempo real (mínimo 2 caracteres)
+- Lista suspensa com todos os títulos que correspondem ao termo
+- Exibição de capa (Open Library ou metadados do Drive)
+- Metadados extraídos automaticamente do nome do arquivo: título, autor, edição, ano
 - Botões de **Download direto** e **Visualizar no navegador**
 
 ---
@@ -156,6 +167,7 @@ O sistema navega recursivamente por todas as subpastas e lista arquivos nos segu
 ## 📋 Módulo de Acervo Completo
 
 - Listagem de todos os livros em ordem alfabética
+- Campo de filtro rápido por título ou autor
 - Colunas: Título | Autor | Formato | Download | Visualizar
 - Atualizado automaticamente conforme o Google Drive
 
@@ -163,28 +175,20 @@ O sistema navega recursivamente por todas as subpastas e lista arquivos nos segu
 
 ## 📤 Módulo de Upload *(Em breve)*
 
-Permitirá que qualquer participante envie ebooks diretamente para o Google Drive, sem precisar acessar a pasta manualmente. Formatos aceitos serão os mesmos já suportados pelo acervo.
+Permitirá que qualquer participante envie ebooks diretamente para o Google Drive sem precisar acessar a pasta manualmente.
 
 > Requer ajuste de permissões de escrita no Google Cloud para o fluxo OAuth dos usuários.
 
 ---
 
-## 🌐 Deploy (Futuro)
+## 🌐 Deploy (Próximo passo)
 
-O sistema foi desenvolvido para rodar localmente, mas está preparado para ser publicado no **Streamlit Community Cloud**:
+O projeto está no GitHub e preparado para publicação no **Streamlit Community Cloud**:
 
-1. Subir o projeto para um repositório GitHub (sem `credentials.json` e `token.json`)
-2. Configurar as credenciais nos **Secrets** do Streamlit Cloud
-3. Trocar o fluxo OAuth de `run_local_server` para fluxo web
-4. Cada usuário autenticaria com sua própria conta Google
-
----
-
-## 👤 Autor
-
-**Diogo Campos Gomes**
-Profissional de negócios e agilidade | Mentor de transição de carreira
-Brasília, DF — Brasil
+1. Acessar [share.streamlit.io](https://share.streamlit.io) e conectar o repositório
+2. Configurar `credentials.json` nos **Secrets** do Streamlit Cloud
+3. Ajustar o fluxo OAuth de `run_local_server` para fluxo web
+4. Cada usuário autenticará com sua própria conta Google
 
 ---
 
@@ -195,9 +199,19 @@ Brasília, DF — Brasil
 | v0.1 | Script CLI (`busca_livros.py`) com busca por terminal |
 | v0.2 | Refatoração em módulos (`drive_backend.py` + `app.py`) |
 | v0.3 | Frontend Streamlit com busca, capa e botões de download |
-| v0.4 | Autocomplete em tempo real, cache em session_state |
-| v0.5 | Design responsivo, paleta âmbar/escuro, botão de busca |
+| v0.4 | Autocomplete em tempo real, cache em `session_state` |
+| v0.5 | Design responsivo, paleta azul/laranja, botão de busca |
 | v0.6 | Multipage com menu lateral, home, acervo e upload coming soon |
+| v0.7 | Publicação no GitHub, `.gitignore`, README completo |
+
+---
+
+## 👤 Autor
+
+**Diogo Campos Gomes**  
+Profissional de negócios e agilidade | Mentor de transição de carreira  
+Brasília, DF — Brasil  
+[github.com/diogodcg](https://github.com/diogodcg)
 
 ---
 
