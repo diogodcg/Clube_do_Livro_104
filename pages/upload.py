@@ -20,10 +20,10 @@ def render():
     '>
       <div style='font-size:3rem; margin-bottom:1rem'>🚀</div>
       <h3 style='color:#0d2d5e; margin-bottom:0.5rem'>Em breve!</h3>
-      <p style='color:#5a7ab0; font-size:0.95rem; max-width:400px; margin:0 auto; line-height:1.7'>
-        Em breve você poderá enviar ebooks diretamente por aqui,
-        sem precisar acessar o Google Drive.<br><br>
-        Fique ligado nas novidades do <strong>Clube do Livro 104</strong>! 📚
+      <p style='color:#5a7ab0; font-size:0.95rem; max-width:500px; margin:0 auto; line-height:1.7'>
+        Em breve você poderá enviar ebooks diretamente por aqui, sem precisar acessar o Google Drive.<br><br>
+        Enquanto isso, continue utilizando o link abaixo para compartilhar o seu acervo digital:<br>
+        <a href='https://drive.google.com/drive/folders/1-dPWk5NKI_3BsECgS-7gSTQICHIzjvRf' target='_blank' style='color:#f47c20; font-weight:600; text-decoration:none;'>Link do Google Drive 📚</a>
       </p>
     </div>
     """, unsafe_allow_html=True)
