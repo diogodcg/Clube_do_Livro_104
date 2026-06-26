@@ -200,6 +200,47 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ── autenticação por senha ───────────────────────────────────────────────────
+def tela_login():
+    st.markdown("""
+    <div style='
+      max-width: 380px;
+      margin: 5rem auto 0;
+      background: #ffffff;
+      border: 1px solid #dce6f7;
+      border-top: 4px solid #f47c20;
+      border-radius: 12px;
+      padding: 2.5rem 2rem;
+      text-align: center;
+    '>
+      <div style='font-size:2.5rem; margin-bottom:0.75rem'>📚</div>
+      <div style='font-family:Lora,serif; font-size:1.3rem; font-weight:600;
+                  color:#0d2d5e; margin-bottom:0.25rem'>Clube do Livro 104</div>
+      <div style='font-size:0.82rem; color:#8aa3cc; margin-bottom:1.5rem'>
+        Acesso restrito aos membros do clube
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col = st.columns([1, 2, 1])[1]
+    with col:
+        senha = st.text_input("Senha", type="password", placeholder="Digite a senha do clube",
+                               label_visibility="collapsed")
+        entrar = st.button("Entrar", use_container_width=True)
+
+        if entrar or senha:
+            senha_correta = st.secrets.get("acesso", {}).get("senha", "")
+            if senha == senha_correta:
+                st.session_state.autenticado = True
+                st.rerun()
+            elif senha:
+                st.error("Senha incorreta. Tente novamente.")
+
+    st.stop()
+
+if not st.session_state.get("autenticado", False):
+    tela_login()
+
 # ── carrega acervo uma vez na sessão ─────────────────────────────────────────
 if "acervo" not in st.session_state:
     with st.spinner("Conectando ao Google Drive e carregando acervo…"):
