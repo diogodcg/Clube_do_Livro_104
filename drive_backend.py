@@ -7,6 +7,13 @@ import os
 import re
 import requests
 
+# Lê as credenciais dos Secrets do Streamlit
+import streamlit as st
+import json
+
+credentials_info = json.loads(st.secrets["google"]["credentials"])
+flow = Flow.from_client_config(credentials_info, SCOPES, redirect_uri=...)
+
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -30,8 +37,20 @@ def autenticar():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
-            creds = flow.run_local_server(port=0)
+            # Produção: lê dos Secrets do Streamlit Cloud
+            if "google" in st.secrets:
+                credentials_info = json.loads(st.secrets["google"]["credentials"])
+                flow = Flow.from_client_config(
+                    credentials_info,
+                    SCOPES,
+                    redirect_uri="https://clubedolivro104.streamlit.app/oauth2callback"
+                )
+                creds = flow.run_local_server(port=0)
+            # Local: lê do arquivo credentials.json
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+                creds = flow.run_local_server(port=0)
+
         with open(TOKEN_FILE, "w") as f:
             f.write(creds.to_json())
 
