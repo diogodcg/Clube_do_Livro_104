@@ -8,10 +8,11 @@ import re
 import json
 import requests
 
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow, Flow
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
+from google.oauth2.credentials import Credentials  # type: ignore[import]
+from google_auth_oauthlib.flow import InstalledAppFlow, Flow  # type: ignore[import]
+from google.auth.transport.requests import Request  # type: ignore[import]
+from googleapiclient.discovery import build  # type: ignore[import]
+from typing import Optional
 
 # ── constantes ────────────────────────────────────────────────────────────────
 FOLDER_ID        = "1-dPWk5NKI_3BsECgS-7gSTQICHIzjvRf"
@@ -148,7 +149,7 @@ def link_visualizar(file_id: str) -> str:
     return f"https://drive.google.com/file/d/{file_id}/view"
 
 # ── thumbnail via Open Library (fallback público) ─────────────────────────────
-def buscar_capa_openlibrary(titulo: str, autor: str = None):
+def buscar_capa_openlibrary(titulo: str, autor: Optional[str] = None):
     """
     Tenta encontrar a capa do livro na Open Library.
     Retorna URL da imagem ou None.
@@ -157,9 +158,14 @@ def buscar_capa_openlibrary(titulo: str, autor: str = None):
         q = titulo
         if autor:
             q += f" {autor}"
+        params = {
+            "q": q,
+            "limit": "1",
+            "fields": "cover_i,title",
+        }
         resp = requests.get(
             "https://openlibrary.org/search.json",
-            params={"q": q, "limit": 1, "fields": "cover_i,title"},
+            params=params,
             timeout=5,
         )
         data = resp.json()
