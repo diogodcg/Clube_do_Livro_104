@@ -7,15 +7,11 @@ import os
 import re
 import json
 import requests
-import streamlit as st
 
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow, Flow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
-
-credentials_info = json.loads(st.secrets["google"]["credentials"])
-flow = Flow.from_client_config(credentials_info, SCOPES, redirect_uri=...)
 
 # ── constantes ────────────────────────────────────────────────────────────────
 FOLDER_ID        = "1-dPWk5NKI_3BsECgS-7gSTQICHIzjvRf"
@@ -27,6 +23,8 @@ BOOK_EXTENSIONS  = {".pdf", ".epub", ".mobi", ".azw", ".azw3", ".djvu", ".fb2", 
 # ── autenticação ──────────────────────────────────────────────────────────────
 def autenticar():
     """Autentica via OAuth2 e retorna o service do Drive."""
+    import streamlit as st
+
     creds = None
     if os.path.exists(TOKEN_FILE):
         creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
@@ -119,7 +117,6 @@ def extrair_metadados(arquivo):
     if props.get("title"):   titulo = props["title"]
     if props.get("edition"): edicao = props["edition"]
 
-    # Thumbnail: usa o link do Drive se existir
     thumbnail = arquivo.get("thumbnailLink") or None
 
     return {
