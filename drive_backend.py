@@ -5,19 +5,17 @@ Módulo de acesso ao Google Drive — usado pelo CLI e pelo frontend Streamlit.
 
 import os
 import re
-import requests
-
-# Lê as credenciais dos Secrets do Streamlit
-import streamlit as st
 import json
+import requests
+import streamlit as st
+
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow, Flow
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
 
 credentials_info = json.loads(st.secrets["google"]["credentials"])
 flow = Flow.from_client_config(credentials_info, SCOPES, redirect_uri=...)
-
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
 
 # ── constantes ────────────────────────────────────────────────────────────────
 FOLDER_ID        = "1-dPWk5NKI_3BsECgS-7gSTQICHIzjvRf"
