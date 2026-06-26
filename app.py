@@ -12,7 +12,7 @@ st.set_page_config(
     page_title="Clube do Livro 104",
     page_icon="📚",
     layout="centered",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state=st.session_state.get("sidebar_state", "expanded"),
 )
 
 # ── estilos globais ───────────────────────────────────────────────────────────
@@ -271,6 +271,7 @@ with st.sidebar:
         options=["🏠  Início", "🔍  Busca de Livro", "📋  Acervo Completo", "📤  Upload de Ebooks"],
         label_visibility="collapsed",
     )
+    st.session_state["sidebar_state"] = "collapsed"
 
     st.markdown("<hr style='margin:0.75rem 0'>", unsafe_allow_html=True)
     total = len(st.session_state.get("acervo", []))
