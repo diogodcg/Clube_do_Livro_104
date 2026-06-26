@@ -37,19 +37,34 @@ def autenticar():
             # Produção: lê dos Secrets do Streamlit Cloud
             if "google" in st.secrets:
                 credentials_info = json.loads(st.secrets["google"]["credentials"])
+                
+                # Para Web Apps na nuvem, você não pode usar run_local_server.
+                # Se for uma Service Account (Altamente Recomendado):
+                # de google.oauth2 import service_account
+                # creds = service_account.Credentials.from_service_account_info(credentials_info, scopes=SCOPES)
+                
+                # Se for manter OAuth de Aplicativo Web:
                 flow = Flow.from_client_config(
                     credentials_info,
                     SCOPES,
                     redirect_uri="https://clubedolivro104.streamlit.app/oauth2callback"
                 )
-                creds = flow.run_local_server(port=0)
-            # Local: lê do arquivo credentials.json
+                
+                # IMPORTANTE: Em vez de run_local_server, na nuvem você precisaria redirecionar o usuário.
+                # Como alternativa rápida se você já gerou o token.json localmente:
+                # BASTA COLOCAR O CONTEÚDO DO SEU token.json LOCAL NOS SECRETS DO STREAMLIT e lê-lo direto!
+                if "token" in st.secrets["google"]:
+                    token_info = json.loads(st.secrets["google"]["token"])
+                    creds = Credentials.from_authorized_user_info(token_info, SCOPES)
             else:
+                # Local: lê do arquivo credentials.json (aqui o InstalledAppFlow funciona)
                 flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
                 creds = flow.run_local_server(port=0)
 
-        with open(TOKEN_FILE, "w") as f:
-            f.write(creds.to_json())
+        # Só grava o arquivo se estiver rodando localmente para evitar erros de permissão na nuvem
+        if "google" not in st.secrets:
+            with open(TOKEN_FILE, "w") as f:
+                f.write(creds.to_json())
 
     return build("drive", "v3", credentials=creds)
 
