@@ -7,12 +7,11 @@ import os
 import re
 import json
 import requests
-from typing import Optional
 
-import google.oauth2.credentials  # type: ignore
-from google_auth_oauthlib.flow import InstalledAppFlow, Flow  # type: ignore
-from google.auth.transport.requests import Request  # type: ignore
-from googleapiclient.discovery import build  # type: ignore
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
 
 # ── constantes ────────────────────────────────────────────────────────────────
 FOLDER_ID        = "1-dPWk5NKI_3BsECgS-7gSTQICHIzjvRf"
@@ -30,29 +29,30 @@ def autenticar():
     import streamlit as st
 
     creds = None
-    if os.path.exists(TOKEN_FILE):
-        creds = google.oauth2.credentials.Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
 
-    if not creds or not creds.valid:
+    # Produção: lê o token diretamente dos Secrets do Streamlit Cloud
+    if "google" in st.secrets and "token" in st.secrets.get("google", {}):
+        token_info = json.loads(st.secrets["google"]["token"])
+        creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+
+        # Renova se expirado
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
-        else:
-            # Produção: lê dos Secrets do Streamlit Cloud
-            if "google" in st.secrets:
-                credentials_info = json.loads(st.secrets["google"]["credentials"])
-                flow = Flow.from_client_config(
-                    credentials_info,
-                    SCOPES,
-                    redirect_uri="https://clubedolivro104.streamlit.app/oauth2callback"
-                )
-                creds = flow.run_local_server(port=0)
-            # Local: lê do arquivo credentials.json
+
+    # Local: fluxo OAuth normal com arquivo
+    else:
+        if os.path.exists(TOKEN_FILE):
+            creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
                 creds = flow.run_local_server(port=0)
 
-        with open(TOKEN_FILE, "w") as f:
-            f.write(creds.to_json())
+            with open(TOKEN_FILE, "w") as f:
+                f.write(creds.to_json())
 
     return build("drive", "v3", credentials=creds)
 
@@ -152,18 +152,15 @@ def link_visualizar(file_id: str) -> str:
     return f"https://drive.google.com/file/d/{file_id}/view"
 
 # ── thumbnail via Open Library (fallback público) ─────────────────────────────
-def buscar_capa_openlibrary(titulo: str, autor: Optional[str] = None):
-    """
-    Tenta encontrar a capa do livro na Open Library.
-    Retorna URL da imagem ou None.
-    """
+def buscar_capa_openlibrary(titulo: str, autor: str = None):
+    """Tenta encontrar a capa do livro na Open Library. Retorna URL ou None."""
     try:
         q = titulo
         if autor:
             q += f" {autor}"
         resp = requests.get(
             "https://openlibrary.org/search.json",
-            params={"q": q, "limit": "1", "fields": "cover_i,title"},
+            params={"q": q, "limit": 1, "fields": "cover_i,title"},
             timeout=5,
         )
         data = resp.json()
@@ -177,11 +174,8 @@ def buscar_capa_openlibrary(titulo: str, autor: Optional[str] = None):
 
 # ── upload de arquivo para o Drive ────────────────────────────────────────────
 def fazer_upload(service, nome_arquivo: str, conteudo: bytes, mimetype: str) -> dict:
-    """
-    Faz upload de um arquivo para a pasta do clube no Google Drive.
-    Retorna o dicionário com id e name do arquivo criado.
-    """
-    from googleapiclient.http import MediaIoBaseUpload  # type: ignore
+    """Faz upload de um arquivo para a pasta do clube no Google Drive."""
+    from googleapiclient.http import MediaIoBaseUpload
     import io
 
     metadata = {
