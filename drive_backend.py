@@ -38,7 +38,7 @@ def autenticar():
             creds.refresh(Request())
         else:
             # Produção: lê dos Secrets do Streamlit Cloud
-            if "google" in st.secrets:
+            if "google" in st.secrets and "token" in st.secrets.get("google", {}):
                 credentials_info = json.loads(st.secrets["google"]["credentials"])
                 flow = Flow.from_client_config(
                     credentials_info,
