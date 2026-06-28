@@ -1,6 +1,6 @@
 # 📚 Clube do Livro 104 — Sistema de Acervo Digital
 
-Sistema web para busca, listagem e futuramente upload de ebooks do **Clube do Livro 104**, grupo de leitores formado por colaboradores da Caixa Econômica Federal espalhados por todo o Brasil.
+Sistema web para busca, listagem e upload de ebooks do **Clube do Livro 104**, grupo de leitores formado por colaboradores da Caixa Econômica Federal espalhados por todo o Brasil.
 
 🌐 **Acesse em:** https://clubedolivro104.streamlit.app
 
@@ -8,7 +8,7 @@ Sistema web para busca, listagem e futuramente upload de ebooks do **Clube do Li
 
 ## 🎯 O que é
 
-O Clube do Livro 104 nasceu como um grupo no WhatsApp e cresceu para reunir leitores de toda a empresa. Este sistema centraliza o acervo digital do clube — hospedado no Google Drive — e oferece uma interface web amigável para que qualquer participante possa encontrar e baixar os ebooks disponíveis, sem precisar navegar manualmente pelas pastas do Drive.
+O Clube do Livro 104 nasceu como um grupo no WhatsApp e cresceu para reunir leitores de toda a empresa. Este sistema centraliza o acervo digital do clube — hospedado no Google Drive — e oferece uma interface web amigável para que qualquer participante possa encontrar, baixar e contribuir com novos ebooks, sem precisar acessar o Google Drive manualmente.
 
 ---
 
@@ -20,7 +20,7 @@ O Clube do Livro 104 nasceu como um grupo no WhatsApp e cresceu para reunir leit
 | 🏠 Página Inicial | ✅ Disponível | Boas-vindas e apresentação do clube |
 | 🔍 Busca de Livros | ✅ Disponível | Busca por título com autocomplete e exibição de capa |
 | 📋 Acervo Completo | ✅ Disponível | Listagem alfabética de todos os livros com download |
-| 📤 Upload de Ebooks | 🔜 Em breve | Envio de novos livros direto para o Google Drive |
+| 📤 Upload de Ebooks | ✅ Disponível | Envio de novos livros direto para o Google Drive |
 
 ---
 
@@ -36,7 +36,10 @@ O Clube do Livro 104 nasceu como um grupo no WhatsApp e cresceu para reunir leit
 │   ├── home.py             # Página inicial com mensagem de boas-vindas
 │   ├── busca.py            # Página de busca por título com autocomplete
 │   ├── acervo.py           # Página de acervo completo em ordem alfabética
-│   └── upload.py           # Página de upload (coming soon)
+│   └── upload.py           # Página de upload de ebooks
+│
+├── .streamlit/
+│   └── secrets.toml        # Secrets locais (NÃO versionar — está no .gitignore)
 │
 ├── credentials.json        # Credenciais OAuth2 do Google Cloud (NÃO versionar)
 ├── token.json              # Token de sessão gerado automaticamente (NÃO versionar)
@@ -46,7 +49,7 @@ O Clube do Livro 104 nasceu como um grupo no WhatsApp e cresceu para reunir leit
 └── README.md               # Este arquivo
 ```
 
-> ⚠️ `credentials.json` e `token.json` estão no `.gitignore` e **nunca devem ser versionados**.
+> ⚠️ `credentials.json`, `token.json` e `.streamlit/secrets.toml` estão no `.gitignore` e **nunca devem ser versionados**.
 
 ---
 
@@ -109,20 +112,28 @@ requests>=2.31.0
 
 ---
 
-## 🔐 Secrets do Streamlit Cloud
+## 🔐 Secrets
 
-O arquivo `.streamlit/secrets.toml` (local) ou os Secrets do Streamlit Cloud devem conter:
+### Local — `.streamlit/secrets.toml`
 
 ```toml
 [acesso]
 senha = "suasenhaaqui"
 
 [google]
-credentials = """{ conteúdo do credentials.json }"""
-token = """{ conteúdo do token.json }"""
+credentials = '{ conteúdo do credentials.json em uma linha }'
+token = '{ conteúdo do token.json em uma linha }'
 ```
 
-> ⚠️ O `token.json` tem prazo de validade. Quando expirar, gere um novo localmente e atualize nos Secrets do Streamlit Cloud.
+### Produção — Streamlit Cloud
+
+Os mesmos valores acima devem ser configurados em **Settings → Secrets** no painel do Streamlit Cloud.
+
+> ⚠️ O `token.json` tem prazo de validade. Quando expirar:
+> 1. Apague o `token.json` local: `rm token.json`
+> 2. Rode o app localmente: `streamlit run app.py`
+> 3. Autorize no navegador — um novo `token.json` será gerado
+> 4. Atualize o Secret `token` no Streamlit Cloud
 
 ---
 
@@ -140,6 +151,7 @@ Formatos suportados: `.pdf`, `.epub`, `.mobi`, `.azw`, `.azw3`, `.djvu`, `.fb2`,
 - Acervo carregado **uma única vez por sessão** via `st.session_state`
 - Busca e listagem feitas **100% em memória**, zero requisições ao Drive durante uso
 - Capas buscadas na **Open Library** e cacheadas por sessão
+- Após upload, o cache é invalidado automaticamente para incluir o novo livro
 
 ---
 
@@ -149,6 +161,15 @@ Formatos suportados: `.pdf`, `.epub`, `.mobi`, `.azw`, `.azw3`, `.djvu`, `.fb2`,
 - Fontes: **Lora** (títulos) + **Inter** (interface)
 - Layout responsivo — sidebar fecha automaticamente ao navegar no celular
 - Rodapé fixo: *Desenvolvido por Diogo Campos Gomes*
+
+---
+
+## ⚠️ Segurança — Lições Aprendidas
+
+- **Nunca commitar** `credentials.json`, `token.json` ou `.streamlit/secrets.toml`
+- Sempre verificar o `.gitignore` antes de fazer push
+- O GitHub tem proteção automática contra secrets expostos — se bloquear, revogar as credenciais antigas e criar novas
+- Usar `git rm --cached <arquivo>` para remover arquivos sensíveis do histórico
 
 ---
 
@@ -166,6 +187,7 @@ Formatos suportados: `.pdf`, `.epub`, `.mobi`, `.azw`, `.azw3`, `.djvu`, `.fb2`,
 | v0.8 | Deploy em produção no Streamlit Cloud |
 | v0.9 | Login por senha para membros do clube |
 | v1.0 | Sidebar fecha automaticamente no celular |
+| v1.1 | Módulo de upload de ebooks para o Google Drive |
 
 ---
 
