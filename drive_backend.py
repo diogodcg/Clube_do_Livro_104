@@ -7,18 +7,21 @@ import os
 import re
 import json
 import requests
-
-from google.oauth2.credentials import Credentials  # type: ignore[import]
-from google_auth_oauthlib.flow import InstalledAppFlow, Flow  # type: ignore[import]
-from google.auth.transport.requests import Request  # type: ignore[import]
-from googleapiclient.discovery import build  # type: ignore[import]
 from typing import Optional
+
+import google.oauth2.credentials  # type: ignore
+from google_auth_oauthlib.flow import InstalledAppFlow, Flow  # type: ignore
+from google.auth.transport.requests import Request  # type: ignore
+from googleapiclient.discovery import build  # type: ignore
 
 # ── constantes ────────────────────────────────────────────────────────────────
 FOLDER_ID        = "1-dPWk5NKI_3BsECgS-7gSTQICHIzjvRf"
 CREDENTIALS_FILE = "credentials.json"
 TOKEN_FILE       = "token.json"
-SCOPES           = ["https://www.googleapis.com/auth/drive.readonly"]
+SCOPES           = [
+    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/drive.file",
+]
 BOOK_EXTENSIONS  = {".pdf", ".epub", ".mobi", ".azw", ".azw3", ".djvu", ".fb2", ".txt", ".zip"}
 
 # ── autenticação ──────────────────────────────────────────────────────────────
@@ -28,7 +31,7 @@ def autenticar():
 
     creds = None
     if os.path.exists(TOKEN_FILE):
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+        creds = google.oauth2.credentials.Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
@@ -37,34 +40,19 @@ def autenticar():
             # Produção: lê dos Secrets do Streamlit Cloud
             if "google" in st.secrets:
                 credentials_info = json.loads(st.secrets["google"]["credentials"])
-                
-                # Para Web Apps na nuvem, você não pode usar run_local_server.
-                # Se for uma Service Account (Altamente Recomendado):
-                # de google.oauth2 import service_account
-                # creds = service_account.Credentials.from_service_account_info(credentials_info, scopes=SCOPES)
-                
-                # Se for manter OAuth de Aplicativo Web:
                 flow = Flow.from_client_config(
                     credentials_info,
                     SCOPES,
                     redirect_uri="https://clubedolivro104.streamlit.app/oauth2callback"
                 )
-                
-                # IMPORTANTE: Em vez de run_local_server, na nuvem você precisaria redirecionar o usuário.
-                # Como alternativa rápida se você já gerou o token.json localmente:
-                # BASTA COLOCAR O CONTEÚDO DO SEU token.json LOCAL NOS SECRETS DO STREAMLIT e lê-lo direto!
-                if "token" in st.secrets["google"]:
-                    token_info = json.loads(st.secrets["google"]["token"])
-                    creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+                creds = flow.run_local_server(port=0)
+            # Local: lê do arquivo credentials.json
             else:
-                # Local: lê do arquivo credentials.json (aqui o InstalledAppFlow funciona)
                 flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
                 creds = flow.run_local_server(port=0)
 
-        # Só grava o arquivo se estiver rodando localmente para evitar erros de permissão na nuvem
-        if "google" not in st.secrets:
-            with open(TOKEN_FILE, "w") as f:
-                f.write(creds.to_json())
+        with open(TOKEN_FILE, "w") as f:
+            f.write(creds.to_json())
 
     return build("drive", "v3", credentials=creds)
 
@@ -173,14 +161,9 @@ def buscar_capa_openlibrary(titulo: str, autor: Optional[str] = None):
         q = titulo
         if autor:
             q += f" {autor}"
-        params = {
-            "q": q,
-            "limit": "1",
-            "fields": "cover_i,title",
-        }
         resp = requests.get(
             "https://openlibrary.org/search.json",
-            params=params,
+            params={"q": q, "limit": "1", "fields": "cover_i,title"},
             timeout=5,
         )
         data = resp.json()
@@ -191,3 +174,31 @@ def buscar_capa_openlibrary(titulo: str, autor: Optional[str] = None):
     except Exception:
         pass
     return None
+
+# ── upload de arquivo para o Drive ────────────────────────────────────────────
+def fazer_upload(service, nome_arquivo: str, conteudo: bytes, mimetype: str) -> dict:
+    """
+    Faz upload de um arquivo para a pasta do clube no Google Drive.
+    Retorna o dicionário com id e name do arquivo criado.
+    """
+    from googleapiclient.http import MediaIoBaseUpload  # type: ignore
+    import io
+
+    metadata = {
+        "name": nome_arquivo,
+        "parents": [FOLDER_ID],
+    }
+
+    media = MediaIoBaseUpload(
+        io.BytesIO(conteudo),
+        mimetype=mimetype,
+        resumable=True,
+    )
+
+    arquivo = service.files().create(
+        body=metadata,
+        media_body=media,
+        fields="id, name",
+    ).execute()
+
+    return arquivo
