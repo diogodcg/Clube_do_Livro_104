@@ -34,7 +34,7 @@ def autenticar():
     creds = None
 
     # Produção: lê o token diretamente dos Secrets do Streamlit Cloud
-    if "google" in st.secrets and "token" in st.secrets.get("google", {}):
+    if "google" in st.secrets:
         token_info = json.loads(st.secrets["google"]["token"])
         creds = Credentials.from_authorized_user_info(token_info, SCOPES)
 
