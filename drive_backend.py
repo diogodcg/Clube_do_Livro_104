@@ -3,6 +3,8 @@ drive_backend.py
 Módulo de acesso ao Google Drive — usado pelo CLI e pelo frontend Streamlit.
 """
 
+# Ajustes finais no backend
+
 import os
 import re
 import json
