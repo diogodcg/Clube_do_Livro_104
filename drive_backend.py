@@ -7,11 +7,12 @@ import os
 import re
 import json
 import requests
+from typing import Optional
 
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore[import]
 from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
+from googleapiclient.discovery import build  # type: ignore[import]
 
 # ── constantes ────────────────────────────────────────────────────────────────
 FOLDER_ID        = "1-dPWk5NKI_3BsECgS-7gSTQICHIzjvRf"
@@ -152,7 +153,7 @@ def link_visualizar(file_id: str) -> str:
     return f"https://drive.google.com/file/d/{file_id}/view"
 
 # ── thumbnail via Open Library (fallback público) ─────────────────────────────
-def buscar_capa_openlibrary(titulo: str, autor: str = None):
+def buscar_capa_openlibrary(titulo: str, autor: Optional[str] = None):
     """Tenta encontrar a capa do livro na Open Library. Retorna URL ou None."""
     try:
         q = titulo
@@ -160,7 +161,7 @@ def buscar_capa_openlibrary(titulo: str, autor: str = None):
             q += f" {autor}"
         resp = requests.get(
             "https://openlibrary.org/search.json",
-            params={"q": q, "limit": 1, "fields": "cover_i,title"},
+            params={"q": q, "limit": "1", "fields": "cover_i,title"},
             timeout=5,
         )
         data = resp.json()
@@ -175,7 +176,7 @@ def buscar_capa_openlibrary(titulo: str, autor: str = None):
 # ── upload de arquivo para o Drive ────────────────────────────────────────────
 def fazer_upload(service, nome_arquivo: str, conteudo: bytes, mimetype: str) -> dict:
     """Faz upload de um arquivo para a pasta do clube no Google Drive."""
-    from googleapiclient.http import MediaIoBaseUpload
+    from googleapiclient.http import MediaIoBaseUpload  # type: ignore[import]
     import io
 
     metadata = {
