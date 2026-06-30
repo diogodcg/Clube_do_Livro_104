@@ -3,18 +3,16 @@ drive_backend.py
 Módulo de acesso ao Google Drive — usado pelo CLI e pelo frontend Streamlit.
 """
 
-# Ajustes finais no backend
-
 import os
 import re
 import json
-import requests
 from typing import Optional
+import requests
 
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore[import]
+from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 from google.auth.transport.requests import Request
-from googleapiclient.discovery import build  # type: ignore[import]
+from googleapiclient.discovery import build  # type: ignore
 
 # ── constantes ────────────────────────────────────────────────────────────────
 FOLDER_ID        = "1-dPWk5NKI_3BsECgS-7gSTQICHIzjvRf"
@@ -34,7 +32,7 @@ def autenticar():
     creds = None
 
     # Produção: lê o token diretamente dos Secrets do Streamlit Cloud
-    if "google" in st.secrets:
+    if "google" in st.secrets and "token" in st.secrets.get("google", {}):
         token_info = json.loads(st.secrets["google"]["token"])
         creds = Credentials.from_authorized_user_info(token_info, SCOPES)
 
@@ -73,7 +71,7 @@ def listar_arquivos(service, folder_id=FOLDER_ID):
             fields=(
                 "nextPageToken, files("
                 "id, name, mimeType, description, "
-                "properties, appProperties, thumbnailLink, hasThumbnail"
+                "properties, appProperties, thumbnailLink, hasThumbnail, md5Checksum"
                 ")"
             ),
             pageToken=page_token,
@@ -125,6 +123,7 @@ def extrair_metadados(arquivo):
     if props.get("edition"): edicao = props["edition"]
 
     thumbnail = arquivo.get("thumbnailLink") or None
+    hash_md5  = arquivo.get("md5Checksum") or None
 
     return {
         "id"       : arquivo["id"],
@@ -135,6 +134,7 @@ def extrair_metadados(arquivo):
         "ano"      : ano,
         "ext"      : ext.lstrip(".").upper(),
         "thumbnail": thumbnail,
+        "hash"     : hash_md5,
     }
 
 # ── busca ─────────────────────────────────────────────────────────────────────
@@ -178,7 +178,7 @@ def buscar_capa_openlibrary(titulo: str, autor: Optional[str] = None):
 # ── upload de arquivo para o Drive ────────────────────────────────────────────
 def fazer_upload(service, nome_arquivo: str, conteudo: bytes, mimetype: str) -> dict:
     """Faz upload de um arquivo para a pasta do clube no Google Drive."""
-    from googleapiclient.http import MediaIoBaseUpload  # type: ignore[import]
+    from googleapiclient.http import MediaIoBaseUpload  # type: ignore
     import io
 
     metadata = {
@@ -199,3 +199,45 @@ def fazer_upload(service, nome_arquivo: str, conteudo: bytes, mimetype: str) -> 
     ).execute()
 
     return arquivo
+
+# ── detecção de duplicatas ────────────────────────────────────────────────────
+def calcular_hash(conteudo: bytes) -> str:
+    """Calcula o hash MD5 do conteúdo do arquivo (mesmo algoritmo usado pelo Drive)."""
+    import hashlib
+    return hashlib.md5(conteudo).hexdigest()
+
+
+def verificar_duplicata(conteudo: bytes, titulo_novo: str, acervo: list, limiar: int = 85):
+    """
+    Verifica se o arquivo enviado já existe no acervo, por dois critérios:
+
+    1. Hash do conteúdo — detecta o MESMO arquivo, mesmo que renomeado.
+    2. Similaridade de título (fuzzy match) — detecta o MESMO livro
+       enviado com nome de arquivo diferente.
+
+    Retorna um dicionário:
+        {"tipo": "hash"|"titulo"|None, "livro": meta ou None, "score": int}
+    """
+    from rapidfuzz import fuzz
+
+    hash_novo = calcular_hash(conteudo)
+
+    # 1) Verificação por hash (exata)
+    for livro in acervo:
+        hash_existente = livro.get("hash")
+        if hash_existente and hash_existente == hash_novo:
+            return {"tipo": "hash", "livro": livro, "score": 100}
+
+    # 2) Verificação por similaridade de título
+    melhor_match = None
+    melhor_score = 0.0
+    for livro in acervo:
+        score = fuzz.token_sort_ratio(titulo_novo.lower(), livro["titulo"].lower())
+        if score > melhor_score:
+            melhor_score = score
+            melhor_match = livro
+
+    if melhor_match and melhor_score >= limiar:
+        return {"tipo": "titulo", "livro": melhor_match, "score": melhor_score}
+
+    return {"tipo": None, "livro": None, "score": 0}
